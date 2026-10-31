@@ -1,0 +1,11 @@
+# News and historical coverage
+
+The recommended path preserves the working recent five-minute experiment. Run the Yahoo coverage and backtest pilot on main. Its summary now appends current Yahoo news and the desired historical-start disclosure; the requested_start input defaults to 2023-01-01. This field does NOT extend the backtest. The days input still controls the recent pilot. No daily-bar substitution is made.
+
+current-news.json contains titles, publishers, URLs, publication and collection timestamps, and per-symbol errors. It is display-only: no price-only trade decision changes. A headline is not proof of a genuine breakout; missing news is unknown. Ticker-query relevance and article credibility are unverified. Historical news filtering remains disabled. The existing four setups, USD 2,000 account, allocation ceiling, and USD 20 planned risk remain unchanged.
+
+A future historical provider must supply verified company relevance and an auditable available_at time, not just the current version of an old article. eligible_articles enforces verified flags, symbol association, timezone-aware publication/availability times, pre-entry availability, and freshness. It is an interface with unit tests, NOT an enabled strategy integration or a credibility classifier. Yahoo context is always marked unverified and cannot pass that gate. The verification flags require externally supported provenance; merely setting flags is not evidence.
+
+Historical-request.json explicitly records the desired start and earliest returned date without claiming continuous history. Yahoo intraday retention prevents a complete five-minute test since 2023. A future provider must establish price/news coverage, corporate actions, and inactive-symbol coverage before such results can be claimed. Current scans and survivor-only symbols remain exploratory. OTC stays coverage-only; charts and Alpaca fallback are not implemented by this change.
+
+Workflow order: tests, recent price-only backtest, performance summary, current-news/coverage append, artifact upload. News failures are reported per symbol and do not reclassify trades. If setup or installation fails the workflow can fail; artifacts and logs remain the diagnostic source. Run the new workflow from main rather than expecting old completed runs to update.

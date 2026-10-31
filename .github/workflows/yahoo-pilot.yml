@@ -7,7 +7,7 @@ on:
         default: ''
         type: string
       days:
-        description: 'Recent calendar days (1-59)'
+        description: 'Recent pilot calendar days (1-59), not history since requested_start'
         default: '30'
         type: string
       limit:
@@ -19,6 +19,10 @@ on:
         default: '300'
         type: choice
         options: ['250', '300']
+      requested_start:
+        description: 'Desired intraday start, coverage disclosure only; older Yahoo history is unavailable'
+        default: '2023-01-01'
+        type: string
 permissions:
   contents: read
 jobs:
@@ -44,6 +48,11 @@ jobs:
       - name: Publish performance and trades in run summary
         if: always()
         run: PYTHONPATH=src python -m penny_lab.report --output results/yahoo-pilot
+      - name: Current news context and requested-history coverage
+        if: always()
+        env:
+          REQUESTED_START: ${{ inputs.requested_start }}
+        run: PYTHONPATH=src python -m penny_lab.news_context --requested-start "$REQUESTED_START"
       - name: Upload coverage and results
         if: always()
         uses: actions/upload-artifact@v4

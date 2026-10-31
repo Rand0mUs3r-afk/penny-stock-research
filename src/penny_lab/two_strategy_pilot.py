@@ -1,8 +1,11 @@
-"""Branch experiment: same multi-provider pipeline with exactly two strategies."""
+"""Branch experiment: unchanged multi-provider pipeline, uptrend pullback only.
+
+Legacy module name retained so the existing workflow command stays compatible.
+"""
 from .config import Config
 from . import multi_pilot
 
-EXPERIMENT_STRATEGIES = ('uptrend_pullback', 'vwap_reclaim')
+EXPERIMENT_STRATEGIES = ('uptrend_pullback',)
 
 def experiment_config(*args, **kwargs):
     kwargs['strategies'] = EXPERIMENT_STRATEGIES

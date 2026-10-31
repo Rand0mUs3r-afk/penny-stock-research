@@ -53,7 +53,7 @@ jobs:
           FEED: ${{ inputs.feed }}
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
-        run: python -m penny_lab.multi_pilot --symbols "$SYMBOLS" --days "$DAYS" --limit "$LIMIT" --allocation "$ALLOCATION" --start "$START" --feed "$FEED"
+        run: python -m penny_lab.two_strategy_pilot --symbols "$SYMBOLS" --days "$DAYS" --limit "$LIMIT" --allocation "$ALLOCATION" --start "$START" --feed "$FEED"
       - name: Publish performance and trades
         if: always()
         run: PYTHONPATH=src python -m penny_lab.report

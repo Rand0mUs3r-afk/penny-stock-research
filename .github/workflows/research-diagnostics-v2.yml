@@ -60,6 +60,9 @@ jobs:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
         run: python -m penny_lab.research_v2 --symbols "$SYMBOLS" --start "$START" --end "$END" --limit "$LIMIT" --min-reference "$REFERENCE" --allocation "$ALLOCATION" --feed "$FEED"
+      - name: Publish reconciled costs and execution timing
+        if: always()
+        run: PYTHONPATH=src python -m penny_lab.execution_report
       - name: Preserve diagnostics
         if: always()
         uses: actions/upload-artifact@v4

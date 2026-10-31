@@ -41,6 +41,9 @@ jobs:
           LIMIT: ${{ inputs.limit }}
           ALLOCATION: ${{ inputs.allocation }}
         run: python -m penny_lab.yahoo_pilot --symbols "$SYMBOLS" --days "$DAYS" --limit "$LIMIT" --allocation "$ALLOCATION"
+      - name: Publish performance and trades in run summary
+        if: always()
+        run: PYTHONPATH=src python -m penny_lab.report --output results/yahoo-pilot
       - name: Upload coverage and results
         if: always()
         uses: actions/upload-artifact@v4

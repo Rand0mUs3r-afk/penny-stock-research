@@ -38,7 +38,7 @@ permissions:
 jobs:
   research:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -63,6 +63,9 @@ jobs:
       - name: Publish reconciled costs and execution timing
         if: always()
         run: PYTHONPATH=src python -m penny_lab.execution_report
+      - name: Offline snapshot replay, doubled-cost stress, and chronological checks
+        if: ${{ success() }}
+        run: python -m penny_lab.validation
       - name: Preserve diagnostics
         if: always()
         uses: actions/upload-artifact@v4

@@ -1,14 +1,11 @@
-# Foundation validation
+# Snapshot replay, cost stress, and chronological diagnostics
 
-Validated in the build workspace using Python 3.12.8:
+Research diagnostics v2 on main now invokes penny_lab.validation after acquisition and execution reporting. It reloads the same saved price files (checking original hashes), eligibility rows and reference values without new network calls. New replay fingerprints record reference/eligibility/config/universe/baseline files. These fingerprints establish replay identity, not independent authentication of source data. All A/B/C cases retain uptrend-only entries, USD 2,000 defaults, selected allocation, planned risk and exit conventions.
 
-- `python -m pip install -e '.[dev]'`: succeeded.
-- `python -m pytest -q`: **42 passed**.
-- `python -m compileall -q src`: succeeded.
-- `python -m penny_lab.cli status --config config/default.toml`: succeeded without API keys.
+Predeclared experiments: spread/slippage multiples 1 and 2, fees unchanged; each is a complete engine rerun with independent cash. With at least ten distinct eligible evaluation dates, split the dates chronologically into first 70% development and last 30% later-period diagnostics. Smaller snapshots run full-sample stress cases only. No automatic optimization, parameter selection, best-strategy selection or train/test leakage from profit-based selection occurs in this module. Reference features can use earlier historical prices/volumes, as they could at the signal time. Full-session and universe selection biases from acquisition remain.
 
-Checks cover configuration rejection, cash/allocation/risk sizing, all four rule triggers, shared cash and aggregate-risk cap, next-bar entry timing, conservative stop-first exits, gaps exceeding planned risk, missing intervals/session closes, zero-volume failure, OTC failure, missing credentials and provider pagination.
+The later period is NOT guaranteed untouched or independent: October data was already inspected and influenced strategy choice, and the original full-period report is visible. This is a chronological diagnostic framework, NOT a claim of successful out-of-sample validation or a full walk-forward optimizer. A future truly uninspected date window is still required. A default flag below thirty trades is only an operational small-sample warning; reaching thirty is not statistical certification. No-trade cases are explicitly labeled.
 
-Tests use tiny explicitly invented SOFTWARE FIXTURES only. No fixture output is a market backtest or evidence of returns. No real market-data backtest, API credential connection, hosted CI completion, true OTC integration or profitable strategy has been verified. The Alpaca network adapter and optional Yahoo news adapter await credential/provider-access testing.
+Artifacts: validation/audit.json, validation/comparison.csv, and per-period/variant/cost folders containing run.json, trades.csv, equity.csv, execution-audit.csv, SUMMARY.md. The GitHub summary displays periods, costs, final equity, net P&L, win rate, expectancy, drawdown and sample status. To replay an artifact locally after unpacking with the research output directory intact, run python -m penny_lab.validation --input PATH_TO_RESEARCH_OUTPUT. It does not download data or need API keys. Local dependencies must already be installed. Historical long windows and many symbols can substantially increase runtime; use fixed small symbol batches.
 
-GitHub Actions is configured to repeat offline tests on Python 3.11 and 3.12, but hosted completion is separate from the local verification above.
+This closes the missing snapshot-replay and cost-stress tooling items, and adds chronological diagnostics. It does not supply verified OTC prices/fills, partial fills, true historical spreads, a historical security master, broker account restrictions, or a validated profitable edge. The existing engine remains a five-minute retrospective simulator. Main is updated; the old experiment branch still carries its previous code. Hosted tests/network runs have not been verified by the assistant.

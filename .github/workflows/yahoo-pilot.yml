@@ -1,0 +1,51 @@
+name: Yahoo coverage and backtest pilot
+on:
+  workflow_dispatch:
+    inputs:
+      symbols:
+        description: 'Optional comma-separated Yahoo symbols; blank scans OTC and US under $10'
+        default: ''
+        type: string
+      days:
+        description: 'Recent calendar days (1-59)'
+        default: '30'
+        type: string
+      limit:
+        description: 'Candidates per screen (1-100)'
+        default: '25'
+        type: string
+      allocation:
+        description: 'USD allocation ceiling'
+        default: '300'
+        type: choice
+        options: ['250', '300']
+permissions:
+  contents: read
+jobs:
+  pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install
+        run: python -m pip install -e '.[dev]' 'yfinance>=0.2.65,<1' 'pandas-market-calendars>=4,<6'
+      - name: Offline tests
+        run: python -m pytest -q
+      - name: Discover, check coverage, and backtest eligible listed data
+        env:
+          SYMBOLS: ${{ inputs.symbols }}
+          DAYS: ${{ inputs.days }}
+          LIMIT: ${{ inputs.limit }}
+          ALLOCATION: ${{ inputs.allocation }}
+        run: python -m penny_lab.yahoo_pilot --symbols "$SYMBOLS" --days "$DAYS" --limit "$LIMIT" --allocation "$ALLOCATION"
+      - name: Upload coverage and results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: yahoo-pilot-${{ github.run_id }}
+          path: results/yahoo-pilot/
+          if-no-files-found: warn
+          retention-days: 7

@@ -1,0 +1,16 @@
+# USD. Assumptions, NOT calibrated estimates of real execution costs.
+starting_equity = 2000.0
+allocation = 300.0 # Change to 250.0 for an independent experiment.
+risk_per_position = 20.0
+# portfolio_risk_cap = 60.0 # Opt-in; no combined cap by default.
+universe = "listed_under_10" # "otc" intentionally fails until a provider exists.
+max_price = 10.0
+strategies = ["breakout_retest", "uptrend_pullback", "support_bounce", "vwap_reclaim"]
+timeframe_minutes = 5
+lookback = 12
+reward_risk = 2.0
+spread_bps = 50.0
+slippage_bps = 25.0
+fee_per_order = 0.0
+max_volume_fraction = 0.01
+min_avg_dollar_volume = 10000.0

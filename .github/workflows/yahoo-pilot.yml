@@ -3,15 +3,15 @@ on:
   workflow_dispatch:
     inputs:
       symbols:
-        description: 'Optional comma-separated Yahoo symbols; blank scans OTC and US under $10'
+        description: 'Optional Yahoo symbols; blank scans OTC and US stocks below $25'
         default: ''
         type: string
       days:
-        description: 'Recent pilot calendar days (1-59), not history since requested_start'
+        description: 'Recent days (1-59); ignored when start_date is supplied'
         default: '30'
         type: string
       limit:
-        description: 'Candidates per screen (1-100)'
+        description: 'Candidates per screen (1-100); capped at 5 for long historical runs'
         default: '25'
         type: string
       allocation:
@@ -19,16 +19,21 @@ on:
         default: '300'
         type: choice
         options: ['250', '300']
-      requested_start:
-        description: 'Desired intraday start, coverage disclosure only; older Yahoo history is unavailable'
-        default: '2023-01-01'
+      start_date:
+        description: 'Actual historical start YYYY-MM-DD, e.g. 2023-01-01; blank runs recent days'
+        default: ''
         type: string
+      feed:
+        description: 'Alpaca feed, never switched silently'
+        default: 'sip'
+        type: choice
+        options: ['sip', 'iex']
 permissions:
   contents: read
 jobs:
   pilot:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -38,21 +43,28 @@ jobs:
         run: python -m pip install -e '.[dev]' 'yfinance>=0.2.65,<1' 'pandas-market-calendars>=4,<6'
       - name: Offline tests
         run: python -m pytest -q
-      - name: Discover, check coverage, and backtest eligible listed data
+      - name: Yahoo primary and Alpaca secondary backtest below 25
         env:
           SYMBOLS: ${{ inputs.symbols }}
           DAYS: ${{ inputs.days }}
           LIMIT: ${{ inputs.limit }}
           ALLOCATION: ${{ inputs.allocation }}
-        run: python -m penny_lab.yahoo_pilot --symbols "$SYMBOLS" --days "$DAYS" --limit "$LIMIT" --allocation "$ALLOCATION"
-      - name: Publish performance and trades in run summary
+          START: ${{ inputs.start_date }}
+          FEED: ${{ inputs.feed }}
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+        run: python -m penny_lab.multi_pilot --symbols "$SYMBOLS" --days "$DAYS" --limit "$LIMIT" --allocation "$ALLOCATION" --start "$START" --feed "$FEED"
+      - name: Publish performance and trades
         if: always()
-        run: PYTHONPATH=src python -m penny_lab.report --output results/yahoo-pilot
-      - name: Current news context and requested-history coverage
+        run: PYTHONPATH=src python -m penny_lab.report
+      - name: Current news and Yahoo-specific history limitations
         if: always()
         env:
-          REQUESTED_START: ${{ inputs.requested_start }}
-        run: PYTHONPATH=src python -m penny_lab.news_context --requested-start "$REQUESTED_START"
+          START: ${{ inputs.start_date }}
+        run: PYTHONPATH=src python -m penny_lab.news_context --requested-start "${START:-$(date -u -d '30 days ago' +%F)}"
+      - name: Actual provider coverage and price-band summary
+        if: always()
+        run: PYTHONPATH=src python -m penny_lab.multi_pilot --report-only
       - name: Upload coverage and results
         if: always()
         uses: actions/upload-artifact@v4

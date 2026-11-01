@@ -1,0 +1,72 @@
+name: Strategy discovery lab
+on:
+  workflow_dispatch:
+    inputs:
+      symbols:
+        description: 'Fixed Yahoo symbols recommended; blank scans current stocks $1-$35'
+        default: ''
+        type: string
+      evaluation_start:
+        description: 'Inclusive evaluation start'
+        default: '2026-10-01'
+        type: string
+      evaluation_end:
+        description: 'Exclusive end, includes October 31 with this default'
+        default: '2026-11-01'
+        type: string
+      limit:
+        description: 'Candidates per screen; start small for ten independent portfolios'
+        default: '10'
+        type: string
+      min_reference:
+        description: 'Inherited sample eligibility; not an RVOL entry filter in new setups'
+        default: '12'
+        type: choice
+        options: ['12','20']
+      allocation:
+        description: 'USD allocation ceiling'
+        default: '300'
+        type: choice
+        options: ['250','300']
+      feed:
+        description: 'Explicit Alpaca fallback feed'
+        default: 'sip'
+        type: choice
+        options: ['sip','iex']
+permissions:
+  contents: read
+jobs:
+  lab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install
+        run: python -m pip install -e '.[dev]' 'yfinance>=0.2.65,<1' 'pandas-market-calendars>=4,<6'
+      - name: Offline regression tests
+        run: python -m pytest -q
+      - name: Acquire one source snapshot with existing coverage safeguards
+        env:
+          SYMBOLS: ${{ inputs.symbols }}
+          START: ${{ inputs.evaluation_start }}
+          END: ${{ inputs.evaluation_end }}
+          LIMIT: ${{ inputs.limit }}
+          REFERENCE: ${{ inputs.min_reference }}
+          ALLOCATION: ${{ inputs.allocation }}
+          FEED: ${{ inputs.feed }}
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+        run: python -m penny_lab.range_runner --symbols "$SYMBOLS" --start "$START" --end "$END" --limit "$LIMIT" --min-reference "$REFERENCE" --allocation "$ALLOCATION" --feed "$FEED"
+      - name: Compare new setups and mixtures on the saved snapshot
+        run: python -m penny_lab.strategy_lab
+      - name: Preserve source and lab results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: strategy-lab-${{ github.run_id }}
+          path: results/research-v2/
+          if-no-files-found: warn
+          retention-days: 14

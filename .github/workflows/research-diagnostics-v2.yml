@@ -3,11 +3,11 @@ on:
   workflow_dispatch:
     inputs:
       symbols:
-        description: 'Optional fixed Yahoo symbols; blank uses current under-25 screens'
+        description: 'Optional fixed Yahoo symbols; blank scans stocks priced $1-$35 inclusive'
         default: ''
         type: string
       evaluation_start:
-        description: 'YYYY-MM-DD; blank defaults to 14 calendar days before end, warmup downloaded separately'
+        description: 'YYYY-MM-DD; blank is 14 days before end, warmup separate'
         default: ''
         type: string
       evaluation_end:
@@ -19,12 +19,12 @@ on:
         default: '10'
         type: string
       min_reference:
-        description: 'Minimum valid historical prefixes out of prior 20 sessions; 12 is a separate relaxed experiment'
+        description: 'Minimum valid historical prefixes in previous 20 sessions'
         default: '12'
         type: choice
         options: ['12','20']
       allocation:
-        description: 'USD position allocation ceiling per independent portfolio'
+        description: 'USD position allocation ceiling'
         default: '300'
         type: choice
         options: ['250','300']
@@ -48,7 +48,7 @@ jobs:
         run: python -m pip install -e '.[dev]' 'yfinance>=0.2.65,<1' 'pandas-market-calendars>=4,<6'
       - name: Regression tests
         run: python -m pytest -q
-      - name: Coverage-first portfolios and detailed summary
+      - name: Stocks 1 to 35, prior-high targets, same-day exits
         env:
           SYMBOLS: ${{ inputs.symbols }}
           START: ${{ inputs.evaluation_start }}
@@ -59,11 +59,14 @@ jobs:
           FEED: ${{ inputs.feed }}
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
-        run: python -m penny_lab.research_v2 --symbols "$SYMBOLS" --start "$START" --end "$END" --limit "$LIMIT" --min-reference "$REFERENCE" --allocation "$ALLOCATION" --feed "$FEED"
-      - name: Publish reconciled costs and execution timing
+        run: python -m penny_lab.range_runner --symbols "$SYMBOLS" --start "$START" --end "$END" --limit "$LIMIT" --min-reference "$REFERENCE" --allocation "$ALLOCATION" --feed "$FEED"
+      - name: Publish costs and execution timing
         if: always()
         run: PYTHONPATH=src python -m penny_lab.execution_report
-      - name: Offline snapshot replay, doubled-cost stress, and chronological checks
+      - name: Publish historical targets and planned net RR
+        if: always()
+        run: PYTHONPATH=src python -m penny_lab.range_runner --report-only
+      - name: Snapshot replay and cost stress tests
         if: ${{ success() }}
         run: python -m penny_lab.validation
       - name: Preserve diagnostics

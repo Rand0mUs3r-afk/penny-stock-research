@@ -15,7 +15,7 @@ on:
         default: '2026-11-01'
         type: string
       limit:
-        description: 'Candidates per screen; five replacement cases at two cost levels'
+        description: 'Candidates per screen; five price-action cases at two cost levels'
         default: '10'
         type: string
       min_reference:
@@ -60,9 +60,9 @@ jobs:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
         run: python -m penny_lab.new_strategy_lab acquire --symbols "$SYMBOLS" --start "$START" --end "$END" --limit "$LIMIT" --min-reference "$REFERENCE" --allocation "$ALLOCATION" --feed "$FEED"
-      - name: Run EMA, Bollinger-RSI, double-bottom and replacement mixtures ONLY
+      - name: Run engulfing, three-candle, stair-step and price-action mixtures ONLY
         run: python -m penny_lab.new_strategy_lab compare
-      - name: Preserve data and replacement strategy results
+      - name: Preserve data and price-action results
         if: always()
         uses: actions/upload-artifact@v4
         with:

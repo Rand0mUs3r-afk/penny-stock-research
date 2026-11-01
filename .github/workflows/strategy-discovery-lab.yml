@@ -11,15 +11,15 @@ on:
         default: '2026-10-01'
         type: string
       evaluation_end:
-        description: 'Exclusive end, includes October 31 with this default'
+        description: 'Exclusive end; November 1 includes October 31'
         default: '2026-11-01'
         type: string
       limit:
-        description: 'Candidates per screen; start small for ten independent portfolios'
+        description: 'Candidates per screen; seven cases at two cost levels'
         default: '10'
         type: string
       min_reference:
-        description: 'Inherited sample eligibility; not an RVOL entry filter in new setups'
+        description: 'Inherited source-history eligibility, not an RVOL entry filter'
         default: '12'
         type: choice
         options: ['12','20']
@@ -48,7 +48,7 @@ jobs:
         run: python -m pip install -e '.[dev]' 'yfinance>=0.2.65,<1' 'pandas-market-calendars>=4,<6'
       - name: Offline regression tests
         run: python -m pytest -q
-      - name: Acquire one source snapshot with existing coverage safeguards
+      - name: Acquire data ONLY - no old uptrend backtest
         env:
           SYMBOLS: ${{ inputs.symbols }}
           START: ${{ inputs.evaluation_start }}
@@ -59,10 +59,10 @@ jobs:
           FEED: ${{ inputs.feed }}
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
-        run: python -m penny_lab.range_runner --symbols "$SYMBOLS" --start "$START" --end "$END" --limit "$LIMIT" --min-reference "$REFERENCE" --allocation "$ALLOCATION" --feed "$FEED"
-      - name: Compare new setups and mixtures on the saved snapshot
-        run: python -m penny_lab.strategy_lab
-      - name: Preserve source and lab results
+        run: python -m penny_lab.new_strategy_lab acquire --symbols "$SYMBOLS" --start "$START" --end "$END" --limit "$LIMIT" --min-reference "$REFERENCE" --allocation "$ALLOCATION" --feed "$FEED"
+      - name: Run NEW standalone strategies and shared-capital mixtures
+        run: python -m penny_lab.new_strategy_lab compare
+      - name: Preserve source snapshot and new strategy results
         if: always()
         uses: actions/upload-artifact@v4
         with:

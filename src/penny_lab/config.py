@@ -7,7 +7,8 @@ STRATEGIES=("breakout_retest","uptrend_pullback","support_bounce","vwap_reclaim"
 LAB_STRATEGIES=('opening_range_breakout','failed_breakdown_recovery','compression_continuation','opening_range_pullback')
 REPLACEMENT_STRATEGIES=('ema_trend_cross','bollinger_rsi_reentry','double_bottom_neckline')
 PRICE_ACTION_STRATEGIES=('engulfing_at_low','three_candle_reversal','stair_step_continuation')
-SUPPORTED_STRATEGIES=STRATEGIES+LAB_STRATEGIES+REPLACEMENT_STRATEGIES+PRICE_ACTION_STRATEGIES
+CONTEXT_STRATEGIES=('impulse_first_pullback',)
+SUPPORTED_STRATEGIES=STRATEGIES+LAB_STRATEGIES+REPLACEMENT_STRATEGIES+PRICE_ACTION_STRATEGIES+CONTEXT_STRATEGIES
 
 @dataclass(frozen=True)
 class Config:

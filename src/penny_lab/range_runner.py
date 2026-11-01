@@ -1,5 +1,4 @@
-"""Active research policy: USD 1-35, frozen prior high, same-day exits."""
-import argparse
+"""Active research policy: USD 1-35, prior high, no minimum RR, same-day exits."""
 import json
 import os
 from pathlib import Path
@@ -26,13 +25,13 @@ def discover(yf,limit):
 def report_policy():
     out=Path('results/research-v2')
     out.mkdir(parents=True,exist_ok=True)
-    lines=['## Active price and structural-target policy','','USD 1–35 inclusive at discovery and RAW historical entry. Entry execution cost can put the modeled purchase price slightly outside that raw-price range. Uptrend entries only; target is the highest high of the 12 completed bars before the pullback/confirmation, frozen at the signal. Minimum planned net reward/risk is 1.0 after modeled costs and fees. Stop is unchanged. Same-day session-end exit; no overnight or three-day holding.','','| Portfolio | Trade | Symbol | Historical target | Reference time | Planned net RR | Expected net reward | Planned risk |','|---|---:|---|---:|---|---:|---:|---:|']
+    lines=['## Active price and structural-target policy','','USD 1–35 inclusive at discovery and RAW historical entry. Target is the highest high of the 12 completed bars before the pullback/confirmation, frozen at the signal. NO minimum RR filter: sub-1:1 RR is allowed. RR and expected reward after costs remain reported, including nonpositive net reward if costs consume the move. Historical target must still exceed raw entry. Stop, cash, sizing and planned-risk checks remain. Same-day exits only.','','| Portfolio | Trade | Symbol | Historical target | Reference time | Planned net RR | Expected net reward | Planned risk |','|---|---:|---|---:|---|---:|---:|---:|---:|']
     for path in sorted(out.glob('*/run.json')):
         result=json.loads(path.read_text())
         for r in result.get('execution_audit',[])[:200]:
             keys=('trade_number','symbol','target','reference_time','expected_net_rr','expected_net_reward','planned_net_risk')
             lines.append('| '+cell(path.parent.name)+' | '+' | '.join(cell(r.get(k,'N/A')) for k in keys)+' |')
-    lines+=['','Full target references and planned RR are in execution_audit in run.json and execution-audit.csv. Realized RR can differ, and planned loss is not guaranteed. Legacy runner labels mentioning under-25 or legacy engine warnings do not override this policy or the recorded engine version.']
+    lines+=['','Workflow defaults evaluate October 1–31, 2026 inclusive using end-exclusive November 1, 2026. Warmup is earlier history, not evaluation trades. Realized RR can differ. Full target/RR records are in run.json and execution-audit.csv.']
     text='\n'.join(lines)+'\n'
     (out/'TARGET_POLICY.md').write_text(text)
     with (out/'SUMMARY.md').open('a') as f:

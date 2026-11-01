@@ -7,12 +7,12 @@ on:
         default: ''
         type: string
       evaluation_start:
-        description: 'YYYY-MM-DD; blank is 14 days before end, warmup separate'
-        default: ''
+        description: 'Inclusive evaluation start; warmup is downloaded separately'
+        default: '2026-10-01'
         type: string
       evaluation_end:
-        description: 'Exclusive YYYY-MM-DD; blank is current UTC date'
-        default: ''
+        description: 'Exclusive end; 2026-11-01 includes all of October 31'
+        default: '2026-11-01'
         type: string
       limit:
         description: 'Candidates per current screen, 1-25'
@@ -48,7 +48,7 @@ jobs:
         run: python -m pip install -e '.[dev]' 'yfinance>=0.2.65,<1' 'pandas-market-calendars>=4,<6'
       - name: Regression tests
         run: python -m pytest -q
-      - name: Stocks 1 to 35, prior-high targets, same-day exits
+      - name: Stocks 1 to 35, prior-high targets, no RR gate, same-day exits
         env:
           SYMBOLS: ${{ inputs.symbols }}
           START: ${{ inputs.evaluation_start }}

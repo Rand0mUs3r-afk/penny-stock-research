@@ -1,8 +1,8 @@
-"""Targets fixed before entry, not inferred from future highs."""
+"""Targets fixed before entry; RR is informational unless explicitly gated."""
 from math import isfinite
 from .risk import adverse_price
 
-POLICY={'min_price':1.0,'max_price':35.0,'target_mode':'pre_pullback_high','minimum_net_rr':1.0,'hold_mode':'session_end'}
+POLICY={'min_price':1.0,'max_price':35.0,'target_mode':'pre_pullback_high','minimum_net_rr':None,'hold_mode':'session_end'}
 
 def previous_high(history,lookback):
     base=history[-lookback-2:-2]

@@ -11,7 +11,7 @@ from .strategies import scan
 from .target_policy import previous_high,raw_price_allowed,net_plan
 
 NY=ZoneInfo('America/New_York')
-ENGINE_VERSION='structural-target-v4'
+ENGINE_VERSION='structural-target-v4.1-no-rr-gate'
 
 def rank_trades(trades,strategies):
     rows=[]
@@ -39,7 +39,8 @@ def run(bars,cfg,manifest):
     if not sessions:
         raise CoverageError('Explicit exchange-calendar session_closes required in manifest')
     policy=manifest.get('entry_policy')
-    if policy and (policy.get('target_mode')!='pre_pullback_high' or policy.get('hold_mode')!='session_end' or policy.get('minimum_net_rr',0)<=0):
+    threshold=policy.get('minimum_net_rr') if policy else None
+    if policy and (policy.get('target_mode')!='pre_pullback_high' or policy.get('hold_mode')!='session_end' or (threshold is not None and threshold<=0)):
         raise ValueError('Unsupported structural target policy')
     groups,seen=defaultdict(list),set()
     for bar in bars:
@@ -112,10 +113,10 @@ def run(bars,cfg,manifest):
                     reject(stamp,symbol,'historical_high_at_or_below_entry')
                     continue
                 plan=net_plan(entry,signal.stop,target,shares,risk,cfg)
-                if plan['expected_net_rr'] is None or plan['expected_net_rr']<policy['minimum_net_rr']:
+                if threshold is not None and (plan['expected_net_rr'] is None or plan['expected_net_rr']<threshold):
                     reject(stamp,symbol,'historical_high_insufficient_net_rr')
                     continue
-                entry_plans[symbol]={**reference,**plan,'target_frozen_at':signal.timestamp.isoformat(),'price_filter_basis':'raw_entry_price_inclusive','hold_mode':'session_end'}
+                entry_plans[symbol]={**reference,**plan,'minimum_rr_filter_enabled':threshold is not None,'target_frozen_at':signal.timestamp.isoformat(),'price_filter_basis':'raw_entry_price_inclusive','hold_mode':'session_end'}
             else:
                 target=entry+cfg.reward_risk*(entry-signal.stop)
                 entry_plans[symbol]={'target':target,'target_mode':'legacy_fixed_rr'}

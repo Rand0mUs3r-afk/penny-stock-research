@@ -3,9 +3,10 @@ from math import isfinite
 from pathlib import Path
 import tomllib
 
-STRATEGIES = ("breakout_retest", "uptrend_pullback", "support_bounce", "vwap_reclaim")
-LAB_STRATEGIES = ('opening_range_breakout','failed_breakdown_recovery','compression_continuation','opening_range_pullback')
-SUPPORTED_STRATEGIES = STRATEGIES + LAB_STRATEGIES
+STRATEGIES=("breakout_retest","uptrend_pullback","support_bounce","vwap_reclaim")
+LAB_STRATEGIES=('opening_range_breakout','failed_breakdown_recovery','compression_continuation','opening_range_pullback')
+REPLACEMENT_STRATEGIES=('ema_trend_cross','bollinger_rsi_reentry','double_bottom_neckline')
+SUPPORTED_STRATEGIES=STRATEGIES+LAB_STRATEGIES+REPLACEMENT_STRATEGIES
 
 @dataclass(frozen=True)
 class Config:
@@ -14,7 +15,7 @@ class Config:
     risk_per_position: float = 20.0
     portfolio_risk_cap: float | None = None
     max_price: float = 10.0
-    universe: str = "listed_under_10"
+    universe: str = 'listed_under_10'
     timeframe_minutes: int = 5
     lookback: int = 12
     reward_risk: float = 2.0
@@ -23,7 +24,7 @@ class Config:
     fee_per_order: float = 0.0
     max_volume_fraction: float = 0.01
     min_avg_dollar_volume: float = 10000.0
-    strategies: tuple[str, ...] = STRATEGIES
+    strategies: tuple[str,...] = STRATEGIES
 
     def __post_init__(self):
         positive=(self.starting_equity,self.allocation,self.risk_per_position,self.max_price,self.reward_risk,self.min_avg_dollar_volume)

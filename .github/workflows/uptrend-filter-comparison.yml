@@ -3,38 +3,36 @@ on:
   workflow_dispatch:
     inputs:
       symbols:
-        description: 'Comma-separated listed USD stock symbols'
-        required: true
+        description: 'Diversified USD ETF proxies, not the old low-price stock screen'
+        default: 'SPY,EFA,IEF,VNQ,DBC'
         type: string
-      allocation:
-        description: 'USD per-position allocation ceiling'
-        default: '300'
-        type: choice
-        options: ['250','300']
-      history_days:
-        description: 'Calendar-day history window, greater than holding period'
-        default: '90'
+      start:
+        description: 'Inclusive evaluation start; earlier warmup downloaded separately'
+        default: '2010-01-01'
         type: string
-      hold_days:
-        description: 'Maximum holding duration in calendar days, 1-45'
-        default: '45'
+      end:
+        description: 'Exclusive end YYYY-MM-DD; blank uses today'
+        default: ''
         type: string
-      feed:
-        description: 'Alpaca historical data feed'
-        default: 'sip'
-        type: choice
-        options: ['sip','iex']
-      fast_exits:
-        description: 'Keep the old fast stochastic exits in addition to stops/deadline'
-        default: false
-        type: boolean
+      boundary:
+        description: 'Optional chronological earlier/later boundary'
+        default: ''
+        type: string
+      spread_bps:
+        description: 'Explicit spread assumption; not optimized for profit'
+        default: '50'
+        type: string
+      slippage_bps:
+        description: 'Explicit slippage assumption'
+        default: '25'
+        type: string
 permissions:
   contents: read
 jobs:
-  extended-holding:
-    name: Stochastic entries with up to 45-day holding
+  monthly-trend:
+    name: Monthly trend, buy-and-hold and constrained 45-day comparison
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -42,29 +40,27 @@ jobs:
           python-version: '3.11'
       - name: Install
         run: python -m pip install -e '.[dev]' 'yfinance>=0.2.65,<1' 'pandas-market-calendars>=4,<6'
-      - name: Compile Python modules
+      - name: Compile source and tests
         run: python -m compileall -q src tests
       - name: Regression tests
         run: python -m pytest -q
-      - name: Run overnight holding and starting/final equity summaries
+      - name: Evaluate monthly trend and benchmarks
         env:
           SYMBOLS: ${{ inputs.symbols }}
-          ALLOCATION: ${{ inputs.allocation }}
-          HISTORY: ${{ inputs.history_days }}
-          HOLD: ${{ inputs.hold_days }}
-          FEED: ${{ inputs.feed }}
-          FAST: ${{ inputs.fast_exits }}
-          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
-          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+          START: ${{ inputs.start }}
+          END: ${{ inputs.end }}
+          BOUNDARY: ${{ inputs.boundary }}
+          SPREAD: ${{ inputs.spread_bps }}
+          SLIPPAGE: ${{ inputs.slippage_bps }}
         run: |
           flags=()
-          if [ "$FAST" = "true" ]; then flags+=(--fast-exits); fi
-          python -m penny_lab.extended_holding --symbols "$SYMBOLS" --allocation "$ALLOCATION" --history-days "$HISTORY" --hold-days "$HOLD" --feed "$FEED" "${flags[@]}"
-      - name: Preserve data, equity, closed trades and open positions
+          if [ -n "$END" ]; then flags+=(--end "$END"); fi
+          python -m penny_lab.monthly_trend --symbols "$SYMBOLS" --start "$START" --boundary "$BOUNDARY" --spread-bps "$SPREAD" --slippage-bps "$SLIPPAGE" "${flags[@]}"
+      - name: Preserve prices, comparisons, orders, equity and attribution
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: extended-holding-${{ github.run_id }}
-          path: results/extended-holding/
+          name: monthly-trend-${{ github.run_id }}
+          path: results/monthly-trend/
           if-no-files-found: warn
           retention-days: 14

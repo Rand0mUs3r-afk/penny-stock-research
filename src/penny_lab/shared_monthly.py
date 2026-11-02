@@ -13,6 +13,9 @@ from .monthly_trend import ASSETS,SOURCE,write_table
 
 STRATEGIES=('buy_hold','monthly_trend')
 
+def entry_start_date(requested):
+    return max(date.fromisoformat(requested),date(2026,9,1)).isoformat()
+
 class Ledger:
     def __init__(self,rate):
         self.cash=2000.
@@ -190,7 +193,7 @@ def main():
     out=Path(args.output)
     out.mkdir(parents=True,exist_ok=True)
     end=pd.Timestamp.now(tz='America/New_York').normalize()
-    start=end-pd.DateOffset(years=args.years)
+    start=pd.Timestamp(entry_start_date((end-pd.DateOffset(years=args.years)).date().isoformat()),tz='America/New_York')
     warm=(start-pd.DateOffset(months=12)).replace(day=1)
     schedule=mcal.get_calendar('NYSE').schedule(start_date=warm.date(),end_date=(end+pd.offsets.MonthEnd(0)).date())
     days=[s.market_open.date().isoformat() for _,s in schedule.iterrows() if s.market_close<end]

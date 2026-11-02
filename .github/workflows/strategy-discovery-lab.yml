@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       symbols:
-        description: 'Fixed Yahoo symbols recommended; blank scans current stocks $1-$35'
+        description: 'Fixed comma-separated listed stocks; blank uses existing discovery'
         default: ''
         type: string
       evaluation_start:
@@ -15,28 +15,38 @@ on:
         default: '2026-11-01'
         type: string
       limit:
-        description: 'Candidates per screen; blended portfolio at two cost levels'
+        description: 'Candidates per discovery screen'
         default: '10'
         type: string
-      min_reference:
-        description: 'Inherited source eligibility, not an RVOL entry filter'
-        default: '12'
-        type: choice
-        options: ['12','20']
       allocation:
-        description: 'USD allocation ceiling'
+        description: 'USD stock allocation ceiling'
         default: '300'
         type: choice
         options: ['250','300']
-      feed:
-        description: 'Explicit Alpaca fallback feed'
-        default: 'sip'
-        type: choice
-        options: ['sip','iex']
+      top_n:
+        description: 'Stocks-in-play maximum symbols per decision time'
+        default: '20'
+        type: string
+      minimum_rvol:
+        description: 'Minimum historical same-time cumulative RVOL'
+        default: '2'
+        type: string
+      holdout_start:
+        description: 'Optional chronological holdout boundary YYYY-MM-DD'
+        default: ''
+        type: string
+      catalysts_csv:
+        description: 'Optional historical catalyst CSV path already in this branch'
+        default: ''
+        type: string
+      require_catalyst:
+        description: 'Require a timestamped historical catalyst'
+        default: false
+        type: boolean
 permissions:
   contents: read
 jobs:
-  lab:
+  research:
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
@@ -46,27 +56,34 @@ jobs:
           python-version: '3.11'
       - name: Install
         run: python -m pip install -e '.[dev]' 'yfinance>=0.2.65,<1' 'pandas-market-calendars>=4,<6'
-      - name: Offline regression tests
+      - name: Regression tests
         run: python -m pytest -q
-      - name: Acquire data only
+      - name: Acquire regular, premarket and separate SPY history
         env:
           SYMBOLS: ${{ inputs.symbols }}
           START: ${{ inputs.evaluation_start }}
           END: ${{ inputs.evaluation_end }}
           LIMIT: ${{ inputs.limit }}
-          REFERENCE: ${{ inputs.min_reference }}
           ALLOCATION: ${{ inputs.allocation }}
-          FEED: ${{ inputs.feed }}
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
-        run: python -m penny_lab.new_strategy_lab acquire --symbols "$SYMBOLS" --start "$START" --end "$END" --limit "$LIMIT" --min-reference "$REFERENCE" --allocation "$ALLOCATION" --feed "$FEED"
-      - name: Run shared-capital ORB bull-flag VWAP blend
-        run: python -m penny_lab.new_strategy_lab compare
-      - name: Preserve source data and blended results
+        run: python -m penny_lab.sip_research acquire --symbols "$SYMBOLS" --start "$START" --end "$END" --limit "$LIMIT" --min-reference 12 --allocation "$ALLOCATION" --feed sip
+      - name: Run components, blends, selectors, cost stress and chronological comparisons
+        env:
+          TOP_N: ${{ inputs.top_n }}
+          RVOL: ${{ inputs.minimum_rvol }}
+          HOLDOUT: ${{ inputs.holdout_start }}
+          CATALYSTS: ${{ inputs.catalysts_csv }}
+          REQUIRE: ${{ inputs.require_catalyst }}
+        run: |
+          flags=()
+          if [ "$REQUIRE" = "true" ]; then flags+=(--require-catalyst); fi
+          python -m penny_lab.sip_research --top-n "$TOP_N" --minimum-rvol "$RVOL" --holdout-start "$HOLDOUT" --catalysts "$CATALYSTS" "${flags[@]}"
+      - name: Preserve source snapshots and research results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: strategy-lab-${{ github.run_id }}
+          name: stocks-in-play-${{ github.run_id }}
           path: results/research-v2/
           if-no-files-found: warn
           retention-days: 14

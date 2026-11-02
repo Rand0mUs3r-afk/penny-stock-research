@@ -3,20 +3,29 @@ on:
   workflow_dispatch:
     inputs:
       years:
-        description: 'Evaluation years; an additional 12-month signal warmup is downloaded'
+        description: 'Evaluation years, plus 12-month signal warmup'
         default: '10'
         type: choice
         options: ['1','3','5','10','15']
       allocation:
-        description: 'USD per-asset allocation ceiling in all cases'
+        description: 'Combined per-ticker allocation ceiling across both strategies'
         default: '300'
         type: choice
         options: ['250','300']
+      trend_weight:
+        description: 'Monthly-trend allocation percent; buy-and-hold gets the remainder'
+        default: '50'
+        type: string
+      cost_multiple:
+        description: 'One cost assumption for this single shared-account run'
+        default: '1'
+        type: choice
+        options: ['0','1','2']
 permissions:
   contents: read
 jobs:
-  monthly-trend:
-    name: Monthly trend, 45-day variant and buy-and-hold comparison
+  shared-portfolio:
+    name: One shared USD 2000 portfolio with exact trade-date ledger
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -30,16 +39,18 @@ jobs:
         run: python -m compileall -q src tests
       - name: Regression tests
         run: python -m pytest -q
-      - name: Run monthly trend research with cost and chronological comparisons
+      - name: Run one continuous shared portfolio, not independent comparison accounts
         env:
           YEARS: ${{ inputs.years }}
           ALLOCATION: ${{ inputs.allocation }}
-        run: python -m penny_lab.monthly_trend --years "$YEARS" --allocation "$ALLOCATION"
-      - name: Preserve daily data, signals, costs and portfolio comparisons
+          WEIGHT: ${{ inputs.trend_weight }}
+          COST: ${{ inputs.cost_multiple }}
+        run: python -m penny_lab.shared_monthly --years "$YEARS" --allocation "$ALLOCATION" --trend-weight "$WEIGHT" --cost-multiple "$COST"
+      - name: Preserve shared-account trades, entry/exit dates and ticker holding days
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: monthly-trend-${{ github.run_id }}
-          path: results/monthly-trend/
+          name: shared-portfolio-${{ github.run_id }}
+          path: results/shared-monthly/
           if-no-files-found: warn
           retention-days: 14

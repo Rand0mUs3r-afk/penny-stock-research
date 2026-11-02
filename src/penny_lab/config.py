@@ -8,7 +8,8 @@ LAB_STRATEGIES=('opening_range_breakout','failed_breakdown_recovery','compressio
 REPLACEMENT_STRATEGIES=('ema_trend_cross','bollinger_rsi_reentry','double_bottom_neckline')
 PRICE_ACTION_STRATEGIES=('engulfing_at_low','three_candle_reversal','stair_step_continuation')
 CONTEXT_STRATEGIES=('impulse_first_pullback',)
-SUPPORTED_STRATEGIES=STRATEGIES+LAB_STRATEGIES+REPLACEMENT_STRATEGIES+PRICE_ACTION_STRATEGIES+CONTEXT_STRATEGIES
+SIP_STRATEGIES=('sip_orb5','sip_orb15','sip_pullback','sip_vwap_bounce','sip_vwap_reclaim','sip_gap_go')
+SUPPORTED_STRATEGIES=STRATEGIES+LAB_STRATEGIES+REPLACEMENT_STRATEGIES+PRICE_ACTION_STRATEGIES+CONTEXT_STRATEGIES+SIP_STRATEGIES
 
 @dataclass(frozen=True)
 class Config:

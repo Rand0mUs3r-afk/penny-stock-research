@@ -12,7 +12,8 @@ NEW_MIXTURES={k:v for k,v in replacement_setups.CASES.items() if k.endswith('_mi
 class SnapshotReady(Exception):
     def __init__(self,cfg,manifest,count):
         self.cfg,self.manifest,self.count=cfg,manifest,count
-ndef capture_snapshot(bars,cfg,manifest):
+
+def capture_snapshot(bars,cfg,manifest):
     raise SnapshotReady(cfg,manifest,len(bars))
 
 def descriptor(event):

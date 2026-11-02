@@ -181,7 +181,7 @@ def main():
         (out/'experiment.json').write_text(json.dumps(audit,indent=2))
         rows=[]
         for period,chosen in periods.items():
-            for case in ('monthly_trend','trend_45day_cap','buy_hold'):
+            for case in ('monthly_trend','buy_hold'):
                 for cost in (0,1,2):
                     result=replay(data,month_ends,chosen[0],chosen[-1],case,args.allocation,cost)
                     folder=out/f'{period}-{case}-cost{cost}'

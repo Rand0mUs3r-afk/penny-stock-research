@@ -3,37 +3,21 @@ on:
   workflow_dispatch:
     inputs:
       symbols:
-        description: 'Optional fixed Yahoo symbols for reproducibility; blank scans'
-        default: ''
-        type: string
-      days:
-        description: 'Calendar days including 20-session warmup (1-59); ignored if start_date supplied'
-        default: '59'
-        type: string
-      limit:
-        description: 'Candidates per screen; long-range cap remains five'
-        default: '10'
+        description: 'Required comma-separated listed USD stock symbols for one-minute scalping'
+        required: true
         type: string
       allocation:
-        description: 'USD allocation ceiling in each independent portfolio'
+        description: 'USD per-position allocation ceiling'
         default: '300'
         type: choice
-        options: ['250', '300']
-      start_date:
-        description: 'Optional actual historical start including warmup; requires Alpaca for older data'
-        default: ''
-        type: string
-      feed:
-        description: 'Explicit Alpaca fallback feed'
-        default: 'sip'
-        type: choice
-        options: ['sip', 'iex']
+        options: ['250','300']
 permissions:
   contents: read
 jobs:
-  compare:
+  stochastic-scalper:
+    name: One-minute stochastic scalper
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -41,28 +25,20 @@ jobs:
           python-version: '3.11'
       - name: Install
         run: python -m pip install -e '.[dev]' 'yfinance>=0.2.65,<1' 'pandas-market-calendars>=4,<6'
-      - name: Offline tests
+      - name: Compile every Python module
+        run: python -m compileall -q src tests
+      - name: Regression tests
         run: python -m pytest -q
-      - name: Download one source snapshot using existing uptrend pipeline
+      - name: Run one-minute stochastic scalper at normal and doubled costs
         env:
           SYMBOLS: ${{ inputs.symbols }}
-          DAYS: ${{ inputs.days }}
-          LIMIT: ${{ inputs.limit }}
           ALLOCATION: ${{ inputs.allocation }}
-          START: ${{ inputs.start_date }}
-          FEED: ${{ inputs.feed }}
-          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
-          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
-        run: python -m penny_lab.two_strategy_pilot --symbols "$SYMBOLS" --days "$DAYS" --limit "$LIMIT" --allocation "$ALLOCATION" --start "$START" --feed "$FEED"
-      - name: Compare A baseline, B RVOL, C RVOL plus trend VWAP
-        run: python -m penny_lab.filter_comparison
-      - name: Upload comparison portfolios and source data
+        run: python -m penny_lab.stochastic_scalper --symbols "$SYMBOLS" --allocation "$ALLOCATION"
+      - name: Preserve minute history, coverage, trades and equity
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: uptrend-filters-${{ github.run_id }}
-          path: |
-            results/filter-comparison/
-            results/yahoo-pilot/
+          name: stochastic-scalper-${{ github.run_id }}
+          path: results/stochastic-scalper/
           if-no-files-found: warn
           retention-days: 7

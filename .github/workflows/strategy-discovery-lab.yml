@@ -11,11 +11,11 @@ on:
         default: '2026-10-01'
         type: string
       evaluation_end:
-        description: 'Exclusive end; November 1 includes October 31'
+        description: 'Exclusive evaluation end'
         default: '2026-11-01'
         type: string
       limit:
-        description: 'Candidates per screen; one contextual setup at two cost levels'
+        description: 'Candidates per screen; blended portfolio at two cost levels'
         default: '10'
         type: string
       min_reference:
@@ -48,7 +48,7 @@ jobs:
         run: python -m pip install -e '.[dev]' 'yfinance>=0.2.65,<1' 'pandas-market-calendars>=4,<6'
       - name: Offline regression tests
         run: python -m pytest -q
-      - name: Acquire data only, without old strategy execution
+      - name: Acquire data only
         env:
           SYMBOLS: ${{ inputs.symbols }}
           START: ${{ inputs.evaluation_start }}
@@ -60,9 +60,9 @@ jobs:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
         run: python -m penny_lab.new_strategy_lab acquire --symbols "$SYMBOLS" --start "$START" --end "$END" --limit "$LIMIT" --min-reference "$REFERENCE" --allocation "$ALLOCATION" --feed "$FEED"
-      - name: Run ONLY impulse-first-pullback at normal and stressed costs
+      - name: Run shared-capital ORB bull-flag VWAP blend
         run: python -m penny_lab.new_strategy_lab compare
-      - name: Preserve data and contextual strategy results
+      - name: Preserve source data and blended results
         if: always()
         uses: actions/upload-artifact@v4
         with:
